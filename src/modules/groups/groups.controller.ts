@@ -24,6 +24,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 export class GroupsController {
   constructor(private readonly groupsService: GroupsService) {}
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Role(Roles.ADMIN)    
   @ApiOperation({ summary: 'Создать группу' })
   @Post('create')
   async createGroup(@Body() createGroupDto: CreateGroupDto) {
@@ -33,7 +36,7 @@ export class GroupsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Получить весь список групп' })
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Role(Roles.ADMIN)
+  @Role(Roles.ADMIN,Roles.TEACHER)
   @Get('all')
   async getAllGroups(): Promise<GroupDocument[]> {
     const query = {
@@ -42,13 +45,19 @@ export class GroupsController {
     return await this.groupsService.find({ query });
   }
 
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Получить группу по айди' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Role(Roles.ADMIN || Roles.TEACHER)
   @Get(':id')
   @ApiParam({ name: 'id', type: 'string', required: true })
   async getGroupById(@Param() group_id): Promise<GroupDocument> {
     return await this.groupsService.findGroupById(group_id.id);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Role(Roles.ADMIN || Roles.TEACHER) 
   @ApiOperation({ summary: 'Удалить группу по айди' })
   @Delete(':id')
   @ApiParam({ name: 'id', type: 'string', required: true })
@@ -58,6 +67,10 @@ export class GroupsController {
     return await this.groupsService.deleteGroupById(group_id.id);
   }
 
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Role(Roles.ADMIN) 
   @ApiOperation({
     summary: 'Добавить студента в группу / изменить группу у студента',
   })

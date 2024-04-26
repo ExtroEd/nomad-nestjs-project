@@ -28,7 +28,10 @@ import { Roles } from '../../helpers/enums/roles.enum';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Изменить данные пользователя по id' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Role(Roles.ADMIN)
   @Put(':id')
   @ApiParam({ name: 'id', type: 'string', required: true })
   async updateUser(
@@ -38,16 +41,17 @@ export class UsersController {
     return await this.usersService.updateUserById(updateUserDto, userId);
   }
 
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Удалить пользователя по id' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Role(Roles.ADMIN)
   @Delete(':id')
   @ApiParam({ name: 'id', type: 'string', required: true })
   async deleteUserById(@Param() userId: ObjectId) {
     return await this.usersService.deleteUserById(userId);
   }
 
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Получить одного пользователя по айди' })
-  @UseGuards(JwtAuthGuard)
   @Get(':id')
   @ApiParam({ name: 'id', type: 'string', required: true })
   async getUserById(@Param() userId): Promise<UserDocument> {

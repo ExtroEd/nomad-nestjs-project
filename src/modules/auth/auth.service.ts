@@ -6,6 +6,9 @@ import { CreateUserDto, LoginUserDto } from './dto';
 
 @Injectable()
 export class AuthService {
+  private trys = 0;
+  private time = null;
+
   constructor(
     private readonly usersService: UsersService,
     private jwtService: JwtService,
@@ -36,9 +39,25 @@ export class AuthService {
 
   login(userData: LoginUserDto, user: UserDocument) {
     const { email } = userData;
-    const payload = { email, user_id: user._id, role: user.role };
-    return {
-      access_token: this.jwtService.sign(payload),
-    };
+  
+    if (this.trys >= 3 && this.time && (Date.now() - this.time) < 60000) {
+      const remainingTimeInSeconds = Math.ceil((60000 - (Date.now() - this.time)) / 1000);
+      console.log(`оставшееся время ${remainingTimeInSeconds}`);
+      throw new Error();
+    }
+    
+    try {
+      const payload = { email, user_id: user._id, role: user.role };
+      return {
+        access_token: this.jwtService.sign(payload),
+      };
+    } catch (error) {
+      this.trys++;
+      this.time = Date.now();
+      const tr = 3 - this.trys;
+      console.log(`попытки ${tr}`);
+      throw error;
+    }
   }
+  
 }
