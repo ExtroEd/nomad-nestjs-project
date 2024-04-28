@@ -40,7 +40,7 @@ export class User {
   is_deleted: boolean;
 
   @ApiProperty({ type: 'boolean' })
-  @Prop({ default: true })
+  @Prop({ default: false })
   blocked: boolean;
 
   @ApiProperty({ type: 'number' })

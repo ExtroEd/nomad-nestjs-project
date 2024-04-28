@@ -11,7 +11,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   async signup(userData) {
     try {
@@ -38,41 +38,29 @@ export class AuthService {
 
   async login(userData: LoginUserDto, user: UserDocument) {
     const { email } = userData;
-    const payload = { email, user_id: user._id, role: user.role };
-
     const userr = await this.usersService.findOne({ email });
-
-    try{
-      return {
-        access_token: this.jwtService.sign(payload),
-      };
-    }catch{
-      if(userr.trys >=3){
-        userr.date=new Date(Date.now() + 1 * 60 * 1000);
-        userr.save()
-      }else{
-        userr.trys+=1
-        userr.save()
+    if (new Date() > userr.date) {
+      try {
+        const payload = { email, user_id: user._id, role: user.role };
+        userr.trys = 0
+        await userr.save()
+        return {
+          access_token: this.jwtService.sign(payload),
+        };
+      } catch (error) {
+        if (userr.trys >= 3) {
+          userr.date = new Date(Date.now() + 1 * 60 * 1000);
+          userr.trys = 0
+          await userr.save()
+        } else {
+          userr.trys += 1
+          await userr.save()
+        }
       }
+    } else {
+      console.log('время еще не прошло');
+
     }
-
-    // console.log(userr);
-    // userr.trys+=1
-    // userr.save()
-    // if(userr.trys >= 3){
-    //   console.log('buuuuuuuuuuuuuuuun');
-      
-    // }
-    // const now = new Date();
-    // const newdata =new Date(Date.now() + 1 * 60 * 1000);
-    // console.log(now);
-    // console.log(newdata);
-    // console.log(now < newdata);
-    
-    
-    
-  
-
   }
-  
+
 }
