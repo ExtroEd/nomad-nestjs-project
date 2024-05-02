@@ -41,15 +41,15 @@ export class User {
 
   @ApiProperty({ type: 'boolean' })
   @Prop({ default: false })
-  blocked: boolean;
+  is_blocked: boolean;
 
   @ApiProperty({ type: 'number' })
   @Prop({ default: 0 })
-  trys: number;
+  login_attempts: number;
 
   @ApiProperty({ type: 'Date' })
   @Prop({ default: 0 })
-  date: Date;
+  banned_until: Date;
 }
 
 export type UserDocument = User & mongoose.Document;

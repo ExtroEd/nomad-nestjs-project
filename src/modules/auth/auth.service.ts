@@ -4,14 +4,12 @@ import { UsersService } from '../users/users.service';
 import { UserDocument } from '../database/models/user.model';
 import { CreateUserDto, LoginUserDto } from './dto';
 
-
 @Injectable()
 export class AuthService {
-
   constructor(
     private readonly usersService: UsersService,
     private jwtService: JwtService,
-  ) { }
+  ) {}
 
   async signup(userData) {
     try {
@@ -21,46 +19,57 @@ export class AuthService {
     }
   }
 
-  async validateUser(
-    email: string,
-    password: string,
-  ): Promise<UserDocument | string> {
+  async validateUser(email: string, password: string): Promise<UserDocument | string> {
     try {
       const user = await this.usersService.findOne({ email, password });
       if (!user) {
-        return null;
+        throw new UnauthorizedException('Неверный адрес электронной почты или пароль');
       }
       return user;
     } catch (error) {
-      return error.data;
+      throw new Error(error.message);
     }
   }
 
   async login(userData: LoginUserDto, user: UserDocument) {
-    const { email } = userData;
-    const userr = await this.usersService.findOne({ email });
-    if (new Date() > userr.date) {
-      try {
-        const payload = { email, user_id: user._id, role: user.role };
-        userr.trys = 0
-        await userr.save()
-        return {
-          access_token: this.jwtService.sign(payload),
-        };
-      } catch (error) {
-        if (userr.trys >= 3) {
-          userr.date = new Date(Date.now() + 1 * 60 * 1000);
-          userr.trys = 0
-          await userr.save()
+    const { email, password } = userData;
+    const foundUser = await this.usersService.findOne({ email });
+
+    if (!foundUser) {
+      throw new UnauthorizedException('Неверный адрес электронной почты или пароль');
+    }
+
+    if (foundUser.is_blocked) {
+      const timeToUnlock = (foundUser.banned_until.getTime() - new Date().getTime()) / 1000;
+      throw new UnauthorizedException(`Аккаунт заблокирован. Пожалуйста, попробуйте снова через ${timeToUnlock} секунд.`);
+    }
+
+    if (new Date() > foundUser.banned_until) {
+      if (foundUser.login_attempts >= 3) {
+        foundUser.banned_until = new Date(Date.now() + 30 * 1000);
+        foundUser.login_attempts = 0;
+        await foundUser.save();
+        throw new UnauthorizedException('Аккаунт заблокирован. Пожалуйста, попробуйте снова через 30 секунд.');
+      } else {
+        if (password !== foundUser.password) {
+          foundUser.login_attempts += 1;
+          await foundUser.save();
+          throw new UnauthorizedException('Неверный адрес электронной почты или пароль');
         } else {
-          userr.trys += 1
-          await userr.save()
+          try {
+            const payload = { email, user_id: user._id, role: user.role };
+            foundUser.login_attempts = 0;
+            await foundUser.save();
+            return {
+              access_token: this.jwtService.sign(payload),
+            };
+          } catch (error) {
+            throw new Error(error.message);
+          }
         }
       }
     } else {
-      console.log('время еще не прошло');
-
+      throw new UnauthorizedException('Аккаунт временно заблокирован. Пожалуйста, попробуйте снова позже.');
     }
   }
-
 }
